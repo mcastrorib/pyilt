@@ -38,22 +38,21 @@ def ilt(time, decay, reg, nbins=256, tmin=1e-2, tmax=1e4, nprune=512):
 	return t2d, y, err
 
 def lcurve(time, decay, nregs=30, nbins=256, tmin=1e-2, tmax=1e4, nprune=512):
-	s = np.logspace(-1.5, 1.5, nregs)
+	regs = np.logspace(-1.5, 1.5, nregs)
 	ts = np.zeros([nregs,nbins])
 	dts = np.zeros([nregs,nbins])
 	errv = np.zeros(nregs)
 	solv = np.zeros(nregs)
-	for i in range(nregs):
-		reg = s[i]
+	for i, reg in enumerate(regs):
 		t,dt,err=ilt(time,decay,reg,nbins,tmin,tmax,nprune)
 		errv[i] = err
 		solv[i] = np.sqrt(np.dot(dt,dt))
 		ts[i,:] = t
 		dts[i,:] = dt
-		
+
 		print(f'Iteration {i}, Reguralizer {reg}, Solution {solv[i]}')
 
-	return ts, dts, errv, solv
+	return ts, dts, regs, errv, solv
 
 
 
@@ -63,6 +62,6 @@ if __name__ == '__main__':
 	decay = np.exp(-times/1000)
 	noise = 0.1*np.random.randn(size)
 	decay = decay + noise
-	bins, amps, errs, solvs = lcurve(times, decay)
+	bins, amps, regs, errs, solvs = lcurve(times, decay)
 	plt.loglog(errs,solvs)
 	plt.show()
