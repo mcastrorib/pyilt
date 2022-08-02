@@ -37,8 +37,8 @@ def ilt(time, decay, reg, nbins=256, tmin=1e-2, tmax=1e4, nprune=512):
 
 	return t2d, y, err
 
-def lcurve(time, decay, nregs=30, nbins=256, tmin=1e-2, tmax=1e4, nprune=512):
-	regs = np.logspace(-1.5, 1.5, nregs)
+def lcurve(time, decay, nregs=30, reglims=[-1.5,1.5], nbins=256, tmin=1e-2, tmax=1e4, nprune=512):
+	regs = np.logspace(reglims[0], reglims[1], nregs)
 	ts = np.zeros([nregs,nbins])
 	dts = np.zeros([nregs,nbins])
 	errv = np.zeros(nregs)
@@ -50,18 +50,33 @@ def lcurve(time, decay, nregs=30, nbins=256, tmin=1e-2, tmax=1e4, nprune=512):
 		ts[i,:] = t
 		dts[i,:] = dt
 
-		print(f'Iteration {i}, Reguralizer {reg}, Solution {solv[i]}')
+		print(f'Iteration {i+1}/{nregs}, Reguralizer {reg:.6f}, Solution {solv[i]:.6f}      ', end='\r')
 
 	return ts, dts, regs, errv, solv
 
+def plot_lcurve(errv, solv):
+	fig, ax = plt.subplots(figsize=(4,4), constrained_layout=True)
+	ax.set_title('L Curve criterion');
+	ax.set_xlabel('Aproximation error');
+	ax.set_ylabel('Magnitude');
+	ax.loglog(errv,solv);
+	
+def plot_t2dist(bins, amps):
+	fig, ax = plt.subplots(figsize=(4,4), constrained_layout=True)
+	ax.set_title('T2 distribution');
+	ax.set_xlabel('T2');
+	ax.set_ylabel('Vol fraction');
+	ax.semilogx(bins,amps);
+	
+
+# if __name__ == '__main__':
+	# size = 10000
+	# times = np.linspace(0,2000,size)
+	# decay = np.exp(-times/1000)
+	# noise = 0.1*np.random.randn(size)
+	# decay = decay + noise
+	# bins, amps, regs, errs, solvs = lcurve(times, decay)
+	# plt.loglog(errs,solvs)
+	# plt.show()
 
 
-if __name__ == '__main__':
-	size = 10000
-	times = np.linspace(0,2000,size)
-	decay = np.exp(-times/1000)
-	noise = 0.1*np.random.randn(size)
-	decay = decay + noise
-	bins, amps, regs, errs, solvs = lcurve(times, decay)
-	plt.loglog(errs,solvs)
-	plt.show()
