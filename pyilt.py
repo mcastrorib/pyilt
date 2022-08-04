@@ -51,6 +51,7 @@ def lcurve(time, decay, nregs=30, reglims=[-1.5,1.5], nbins=256, tmin=1e-2, tmax
 		dts[i,:] = dt
 
 		print(f'Iteration {i+1}/{nregs}, Reguralizer {reg:.6f}, Solution {solv[i]:.6f}      ', end='\r')
+	print('')
 
 	return ts, dts, regs, errv, solv
 
