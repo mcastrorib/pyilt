@@ -27,7 +27,31 @@ def ilt(time, decay, reg, nbins=256, tmin=1e-2, tmax=1e4, nprune=512):
 	M = np.zeros([N,G])
 	for i in range(G):
 		M[:,i] = np.exp(-time/t2d[i])
+	print(M)
+	if(reg == 0):
+		y, err = nnls(M,decay)
+	else:
+		Mreg = np.concatenate((M, reg*np.eye(G)))
+		seq = np.concatenate((decay, np.zeros(G)))
+		y, err = nnls(Mreg,seq)
 
+	return t2d, y, err
+
+def ilt_with_factor(time, decay, reg, nbins=256, tmin=1e-2, tmax=1e4, nprune=512, factor=1.0, axis=1):
+	indexes = logprune_idxs(time.size, nprune)
+	time = time[indexes]
+	decay = decay[indexes]
+	t2d = np.logspace(np.log10(tmin), np.log10(tmax), nbins)
+	N = indexes.size
+	G = t2d.size
+	M = np.zeros([N,G])
+	if(axis==0):
+		for i in range(N):
+			M[i,:] = np.exp(-factor*time[i]/t2d)
+	elif(axis==1):
+		for i in range(G):
+			M[:,i] = np.exp(-factor*time/t2d[i])
+	print(M)
 	if(reg == 0):
 		y, err = nnls(M,decay)
 	else:
@@ -45,6 +69,24 @@ def lcurve(time, decay, nregs=30, reglims=[-1.5,1.5], nbins=256, tmin=1e-2, tmax
 	solv = np.zeros(nregs)
 	for i, reg in enumerate(regs):
 		t,dt,err=ilt(time,decay,reg,nbins,tmin,tmax,nprune)
+		errv[i] = err
+		solv[i] = np.sqrt(np.dot(dt,dt))
+		ts[i,:] = t
+		dts[i,:] = dt
+
+		print(f'Iteration {i+1}/{nregs}, Reguralizer {reg:.6f}, Solution {solv[i]:.6f}      ', end='\r')
+	print('')
+
+	return ts, dts, regs, errv, solv
+
+def lcurve_with_factor(time, decay, nregs=30, reglims=[-1.5,1.5], nbins=256, tmin=1e-2, tmax=1e4, nprune=512, factor=1.0, axis=1):
+	regs = np.logspace(reglims[0], reglims[1], nregs)
+	ts = np.zeros([nregs,nbins])
+	dts = np.zeros([nregs,nbins])
+	errv = np.zeros(nregs)
+	solv = np.zeros(nregs)
+	for i, reg in enumerate(regs):
+		t,dt,err=ilt(time,decay,reg,nbins,tmin,tmax,nprune,factor,axis)
 		errv[i] = err
 		solv[i] = np.sqrt(np.dot(dt,dt))
 		ts[i,:] = t
