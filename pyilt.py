@@ -70,33 +70,35 @@ def ilt_with_factor(time, decay, reg, nbins=256, tmin=1e-2, tmax=1e4, nprune=512
 def ilt_with_precond(time, decay, reg, nbins=256, tmin=1e-2, tmax=1e4, nprune=512, precond=1.0):
 
 	indexes = logprune_idxs(time.size, nprune)
-	time = time[indexes]
-	decay = decay[indexes]
+	ltime = time[indexes]
+	ldecay = decay[indexes]
+	lprecond = None
 
 	t2d = np.logspace(np.log10(tmin), np.log10(tmax), nbins)
 	N = indexes.size
 	G = t2d.size
 	M = np.zeros([N,G])
-
+	
 	if not isinstance(precond, np.ndarray):
 		print(f"Warning: precond is not an instance of np.ndarray")
-		precond = np.ones([N,G])
+		precond = np.ones([time.size, nbins])
 
-	if(isinstance(precond, np.ndarray) and not np.array_equal(precond.shape, M.shape)):
-		print(f"Warning: precond [{precond.shape}] and input matrix [{M.shape}] are uncompatible")
-		precond = np.ones([N,G])
-
-	pprecond = precond[indexes, :]
+	if (np.array_equal(precond.shape, np.array([time.size, nbins]))):
+		lprecond = precond[indexes, :]
+	else:
+		print(f"Warning: precond [{precond.shape}] and input matrix [{time.size},{nbins}] are uncompatible")
+		lprecond = np.ones([N,G])
+	
 
 	for i in range(N):
 		for j in range(G):
-			M[i,j] = np.exp(-pprecond[i,j]*time[i]/t2d[j])
+			M[i,j] = np.exp(-lprecond[i,j]*ltime[i]/t2d[j])
 
 	if(reg == 0):
-		y, err = nnls(M,decay)
+		y, err = nnls(M,ldecay)
 	else:
 		Mreg = np.concatenate((M, reg*np.eye(G)))
-		seq = np.concatenate((decay, np.zeros(G)))
+		seq = np.concatenate((ldecay, np.zeros(G)))
 		y, err = nnls(Mreg,seq)
 
 	return t2d, y, err
@@ -153,11 +155,11 @@ def lcurve_with_precond(time, decay, nregs=30, reglims=[-1.5,1.5], nbins=256, tm
 
 	if (type(precond) is not np.ndarray):
 		print(f"Warning: precond is not an instance of np.ndarray")
-		precond = np.ones([nprune, nbins])
+		precond = np.ones([time.size, nbins])
 
-	if not np.array_equal(precond.shape, np.array([nprune, nbins])):
-		print(f"Warning: precond [{precond.shape}] and input matrix [{nprune},{nbins}] are uncompatible")
-		precond = np.ones([nprune, nbins])
+	if not np.array_equal(precond.shape, np.array([time.size, nbins])):
+		print(f"Warning: precond [{precond.shape}] and input matrix [{time.size},{nbins}] are uncompatible")
+		precond = np.ones([time.size, nbins])
 
 	for i, reg in enumerate(regs):
 		t,dt,err=ilt_with_precond(time,decay,reg,nbins,tmin,tmax,nprune,precond)
